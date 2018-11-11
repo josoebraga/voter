@@ -27,6 +27,8 @@ public class VoterService {
 
     private static final String MESSAGE_INVALID_ID = "Invalid id";
     private static final String MESSAGE_VOTER_NOT_FOUND = "Voter not found";
+    private static final String MESSAGE_EMAIL_FOUND = "This e-mail is already registered";
+    private static final String MESSAGE_VOTER_PASSWORD_NOT_MATCH = "Password doesn't match";
 
     @Autowired
     public VoterService(VoterRepository voterRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder){
@@ -43,7 +45,11 @@ public class VoterService {
     public VoterOutput create(VoterInput voterInput) {
         validateInput(voterInput, false);
         Voter voter = modelMapper.map(voterInput, Voter.class);
-        voter.setPassword(passwordEncoder.encode(voter.getPassword()));
+        if(voter.getPassword().equals(voterInput.getPasswordConfirm())) {
+            voter.setPassword(passwordEncoder.encode(voter.getPassword()));
+        } else {
+            throw new GenericOutputException(MESSAGE_VOTER_PASSWORD_NOT_MATCH);
+        }
         voter = voterRepository.save(voter);
         return modelMapper.map(voter, VoterOutput.class);
     }
@@ -72,13 +78,27 @@ public class VoterService {
             throw new GenericOutputException(MESSAGE_VOTER_NOT_FOUND);
         }
 
-        voter.setEmail(voterInput.getEmail());
-        voter.setName(voterInput.getName());
+    try {
+        voter.setEmail(voterInput.getEmail()); //Tratado no voter api
+    } catch (Exception e) {
+        throw new GenericOutputException(MESSAGE_EMAIL_FOUND);
+    }
+
+            voter.setName(voterInput.getName()); /* Tratado no voter input */
+
         if (!StringUtils.isBlank(voterInput.getPassword())) {
-            voter.setPassword(passwordEncoder.encode(voterInput.getPassword()));
+
+            if(voterInput.getPassword().equals(voterInput.getPasswordConfirm())) {
+                voter.setPassword(passwordEncoder.encode(voterInput.getPassword()));
+            } else {
+                throw new GenericOutputException(MESSAGE_VOTER_PASSWORD_NOT_MATCH);
+            }
+
         }
         voter = voterRepository.save(voter);
+
         return modelMapper.map(voter, VoterOutput.class);
+
     }
 
     public GenericOutput delete(Long voterId) {
