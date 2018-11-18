@@ -27,8 +27,6 @@ public class VoterService {
 
     private static final String MESSAGE_INVALID_ID = "Invalid id";
     private static final String MESSAGE_VOTER_NOT_FOUND = "Voter not found";
-    private static final String MESSAGE_EMAIL_FOUND = "This e-mail is already registered";
-    private static final String MESSAGE_VOTER_PASSWORD_NOT_MATCH = "Password doesn't match";
 
     @Autowired
     public VoterService(VoterRepository voterRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder){
@@ -44,12 +42,9 @@ public class VoterService {
 
     public VoterOutput create(VoterInput voterInput) {
         validateInput(voterInput, false);
+        checkEmailDuplicate(voterInput.getEmail(), null);
         Voter voter = modelMapper.map(voterInput, Voter.class);
-        if(voter.getPassword().equals(voterInput.getPasswordConfirm())) {
-            voter.setPassword(passwordEncoder.encode(voter.getPassword()));
-        } else {
-            throw new GenericOutputException(MESSAGE_VOTER_PASSWORD_NOT_MATCH);
-        }
+        voter.setPassword(passwordEncoder.encode(voter.getPassword()));
         voter = voterRepository.save(voter);
         return modelMapper.map(voter, VoterOutput.class);
     }
@@ -72,33 +67,20 @@ public class VoterService {
             throw new GenericOutputException(MESSAGE_INVALID_ID);
         }
         validateInput(voterInput, true);
+        checkEmailDuplicate(voterInput.getEmail(), voterId);
 
         Voter voter = voterRepository.findById(voterId).orElse(null);
         if (voter == null){
             throw new GenericOutputException(MESSAGE_VOTER_NOT_FOUND);
         }
 
-    try {
-        voter.setEmail(voterInput.getEmail()); //Tratado no voter api
-    } catch (Exception e) {
-        throw new GenericOutputException(MESSAGE_EMAIL_FOUND);
-    }
-
-            voter.setName(voterInput.getName()); /* Tratado no voter input */
-
+        voter.setEmail(voterInput.getEmail());
+        voter.setName(voterInput.getName());
         if (!StringUtils.isBlank(voterInput.getPassword())) {
-
-            if(voterInput.getPassword().equals(voterInput.getPasswordConfirm())) {
-                voter.setPassword(passwordEncoder.encode(voterInput.getPassword()));
-            } else {
-                throw new GenericOutputException(MESSAGE_VOTER_PASSWORD_NOT_MATCH);
-            }
-
+            voter.setPassword(passwordEncoder.encode(voterInput.getPassword()));
         }
         voter = voterRepository.save(voter);
-
         return modelMapper.map(voter, VoterOutput.class);
-
     }
 
     public GenericOutput delete(Long voterId) {
@@ -116,11 +98,18 @@ public class VoterService {
         return new GenericOutput("Voter deleted");
     }
 
+    private void checkEmailDuplicate(String email, Long currentVoter){
+        Voter voter = voterRepository.findFirstByEmail(email);
+        if (voter != null && !voter.getId().equals(currentVoter)){
+            throw new GenericOutputException("Duplicate email");
+        }
+    }
+
     private void validateInput(VoterInput voterInput, boolean isUpdate){
         if (StringUtils.isBlank(voterInput.getEmail())){
             throw new GenericOutputException("Invalid email");
         }
-        if (StringUtils.isBlank(voterInput.getName())){
+        if (StringUtils.isBlank(voterInput.getName()) || voterInput.getName().trim().length() < 5 || !voterInput.getName().trim().contains(" ")) {
             throw new GenericOutputException("Invalid name");
         }
         if (!StringUtils.isBlank(voterInput.getPassword())){

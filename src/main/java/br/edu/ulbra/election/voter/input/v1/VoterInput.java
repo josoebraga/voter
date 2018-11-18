@@ -1,6 +1,5 @@
 package br.edu.ulbra.election.voter.input.v1;
 
-import br.edu.ulbra.election.voter.exception.GenericOutputException;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 
@@ -25,13 +24,7 @@ public class VoterInput {
     }
 
     public String getName() {
-        if ((this.name.substring(0, (this.name.indexOf(" ") - 1))).length() >= 3 &
-                (this.name.substring((this.name.indexOf(" ") + 1), this.name.length())).length() >= 3)
-        {
-            return name;
-        } else{
-            throw new GenericOutputException("Invalid name");
-        }
+        return name;
     }
 
     public void setName(String name) {
