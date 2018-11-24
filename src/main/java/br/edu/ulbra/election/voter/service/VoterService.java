@@ -3,6 +3,7 @@ package br.edu.ulbra.election.voter.service;
 import br.edu.ulbra.election.voter.exception.GenericOutputException;
 import br.edu.ulbra.election.voter.input.v1.VoterInput;
 import br.edu.ulbra.election.voter.model.Voter;
+import br.edu.ulbra.election.voter.client.VoteClientService;
 import br.edu.ulbra.election.voter.output.v1.GenericOutput;
 import br.edu.ulbra.election.voter.output.v1.VoterOutput;
 import br.edu.ulbra.election.voter.repository.VoterRepository;
@@ -20,19 +21,18 @@ import java.util.List;
 public class VoterService {
 
     private final VoterRepository voterRepository;
-
     private final ModelMapper modelMapper;
-
     private final PasswordEncoder passwordEncoder;
-
+    private final VoteClientService voteClientService;
     private static final String MESSAGE_INVALID_ID = "Invalid id";
     private static final String MESSAGE_VOTER_NOT_FOUND = "Voter not found";
 
     @Autowired
-    public VoterService(VoterRepository voterRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder){
+    public VoterService(VoterRepository voterRepository, ModelMapper modelMapper, PasswordEncoder passwordEncoder, VoteClientService voteClientService){
         this.voterRepository = voterRepository;
         this.modelMapper = modelMapper;
         this.passwordEncoder = passwordEncoder;
+        this.voteClientService = voteClientService;
     }
 
     public List<VoterOutput> getAll(){
@@ -92,6 +92,18 @@ public class VoterService {
         if (voter == null){
             throw new GenericOutputException(MESSAGE_VOTER_NOT_FOUND);
         }
+
+
+/******************************/
+//Não pode ser excluído um eleitor com votos.
+
+        String electionExistsVoter = voteClientService.getById(voterId);
+
+        if (!electionExistsVoter.trim().equals("0")){
+            throw new GenericOutputException("The voter have votes, then is not possible to change it!");
+        }
+
+/******************************/
 
         voterRepository.delete(voter);
 
