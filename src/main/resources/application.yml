@@ -36,4 +36,5 @@ info:
 
 url:
   vote-service: 'http://localhost:8084'
+  election-service: 'http://localhost:8084'
 

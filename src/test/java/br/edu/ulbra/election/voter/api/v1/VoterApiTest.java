@@ -106,4 +106,23 @@ public class VoterApiTest {
                 .andExpect(jsonPath("$.message", equalTo("OK")));
     }
 
+    @Test
+    public void getAll1() {
+    }
+
+    @Test
+    public void getById() {
+    }
+
+    @Test
+    public void create1() {
+    }
+
+    @Test
+    public void update1() {
+    }
+
+    @Test
+    public void delete() {
+    }
 }
